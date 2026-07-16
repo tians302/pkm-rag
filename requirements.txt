@@ -1,0 +1,10 @@
+rank_bm25>=0.2.2
+gradio>=4.0
+fastapi>=0.110
+uvicorn>=0.29
+numpy
+# dense retrieval + phase-2 fine-tuning (run on your machine / CARC):
+sentence-transformers>=3.0
+torch
+# optional in-process generation backend:
+# transformers>=4.44

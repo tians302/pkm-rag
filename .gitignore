@@ -1,0 +1,69 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+build/
+dist/
+.eggs/
+*.so
+
+# Virtual envs
+.venv/
+venv/
+.env/
+
+# Test / lint / type caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Raw downloads + built corpus + embedding arrays (scripts regenerate)
+# Rebuild: download_data.py -> pkmrag.build_corpus -> finetune/make_pairs.py
+# make_pairs.py seeds RNG at 42, so the eval split is identical on any machine.
+data/raw/
+data/processed/*.jsonl
+data/processed/*.json
+data/processed/*.npy
+data/processed/*.npz
+data/processed/*.pkl
+data/processed/*.faiss
+
+# Training / model runs
+runs/
+checkpoints/
+wandb/
+outputs/
+*.pt
+*.pth
+*.ckpt
+*.log
+
+# Local HF / torch caches if stored in-repo
+.cache/
+models/
+*.bin
+*.safetensors
+
+# Gradio
+flagged/
+.gradio/
