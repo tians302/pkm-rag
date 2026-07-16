@@ -160,3 +160,14 @@ pkm-rag/
   1,025 species in all languages regardless.
 - Moves are not yet in the corpus (`move_names.csv` is multilingual too —
   natural extension).
+
+## License
+
+Code is released under the [MIT License](LICENSE).
+
+The Pokédex data itself is **not** covered by that license: it is sourced from
+the [PokeAPI database](https://github.com/PokeAPI/pokeapi) and the underlying
+names, flavor text, and species data remain the property of Nintendo / Game
+Freak / The Pokémon Company. Nothing here is affiliated with or endorsed by
+them. No corpus data is committed to this repo — `scripts/download_data.py`
+fetches it at build time.
