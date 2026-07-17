@@ -71,12 +71,15 @@ class SparseRetriever:
                lang_boost: float = 1.15) -> list[dict]:
         """Top-k docs; boosts for exact name matches + query language."""
         qlang = detect_lang(query)
+        ql = query.lower()
         named = self._matched_species(query)
         scores = self.bm25.get_scores(tokenize(query))
         boosted = []
         for doc, s in zip(self.docs, scores):
             if doc["species_id"] in named:
                 s *= self.ALIAS_BOOST
+            elif any(a in ql for a in doc.get("aliases", ())):
+                s *= self.ALIAS_BOOST   # type-chart docs: exact type name
             dl = doc["lang"]
             match = (dl == qlang or
                      (qlang == "zh" and dl.startswith("zh")))

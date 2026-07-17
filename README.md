@@ -23,10 +23,19 @@ All data comes from the [PokeAPI database](https://github.com/PokeAPI/pokeapi)
 - **Pokedex flavor text**: ~14.5k EN / ~5.8k JA / ~2.9k each zh-Hans & zh-Hant
   entries (official Chinese text exists from Gen 7 onward)
 - Localized **type and ability** names
+- The **type-effectiveness matrix** (`type_efficacy.csv`)
 
-The corpus builder emits **4,100 documents** (one per species × language):
-a localized fact card (names in all languages, genus, types, abilities,
-height/weight, base stats) plus deduplicated Pokedex entries.
+The corpus builder emits **4,172 documents**:
+
+- **4,100 species docs** (one per species × language): a localized fact card
+  (names in all languages, genus, types, abilities, height/weight, base
+  stats, and a computed weakness/resistance line that accounts for dual
+  typing) plus deduplicated Pokedex entries.
+- **72 type-chart docs** (18 types × 4 languages) phrased the way questions
+  are asked ("the most effective attacks against Fire-type Pokemon are…") —
+  small local LLMs answer reliably from that phrasing but flip the
+  attack/defense direction when given chart-style wording ("Fire is weak
+  to…").
 
 ## Architecture
 
@@ -93,6 +102,10 @@ curl -X POST localhost:8000/api/ask -H 'Content-Type: application/json' \
   the query (any of the 5 language variants) doubles that species' scores.
   This fixed a fun failure mode: without it, "Pikachu" retrieves *Mimikyu*,
   whose Pokedex entries mention Pikachu more often than Pikachu's own do.
+  The same boost applies to type names, for the same reason: every type-chart
+  doc shares the question's vocabulary ("attack", "effective"), so without it
+  BM25 TF saturation ranks the wrong type's chart above the one named in the
+  query.
 - Language boost: docs matching the query's script rank slightly higher
 
 **Dense (BGE-M3)** — `pkmrag/retrieval_dense.py`. Multilingual embeddings
@@ -108,10 +121,10 @@ Cross-lingual name→document retrieval on 102 held-out species
 
 | query lang | recall@5 | MRR | n |
 |-----------|---------|------|-----|
-| en | 1.000 | 0.493 | 102 |
+| en | 1.000 | 0.495 | 102 |
 | ja | 1.000 | 0.497 | 102 |
-| zh-hans | 1.000 | 0.525 | 102 |
-| zh-hant | 1.000 | 0.696 | 102 |
+| zh-hans | 1.000 | 0.529 | 102 |
+| zh-hant | 1.000 | 0.691 | 102 |
 
 (Sparse retriever. MRR < 1 mostly because the same-language doc — excluded
 by the cross-lingual criterion — often ranks first, which is desirable in

@@ -67,3 +67,8 @@ models/
 # Gradio
 flagged/
 .gradio/
+
+# Kaggle datasets dropped in project root (not committed; see README data section)
+Pokemon.csv
+pokemon-2.csv
+pokemon-dataset-1000/

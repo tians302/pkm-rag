@@ -32,6 +32,8 @@ def main(eval_frac: float = 0.1) -> None:
     docs = {}                            # (sid, lang) -> text
     for line in open(PROC / "corpus.jsonl", encoding="utf-8"):
         d = json.loads(line)
+        if d.get("kind", "species") != "species":
+            continue                     # type-chart docs are not pair material
         docs[(d["species_id"], d["lang"])] = d["text"]
     names = {int(k): v for k, v in
              json.load(open(PROC / "names_link.json",

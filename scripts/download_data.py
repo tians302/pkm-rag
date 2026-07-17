@@ -20,6 +20,7 @@ FILES = [
     "pokemon_abilities.csv",
     "types.csv",
     "type_names.csv",                  # localized type names
+    "type_efficacy.csv",               # attack/defense damage factors
     "abilities.csv",
     "ability_names.csv",               # localized ability names
     "versions.csv",
