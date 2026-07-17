@@ -18,6 +18,14 @@ from pathlib import Path
 
 RAW = Path(__file__).resolve().parent.parent / "data" / "raw"
 
+# some mirrors 403 python-urllib's default User-Agent
+UA = {"User-Agent": "pkm-rag/1.0 (+https://github.com/tians302/pkm-rag)"}
+
+
+def fetch(url: str) -> bytes:
+    return urllib.request.urlopen(
+        urllib.request.Request(url, headers=UA)).read()
+
 SETS_URL = "https://data.pkmn.cc/sets/gen9.json"
 TIERS_URL = ("https://raw.githubusercontent.com/smogon/pokemon-showdown/"
              "master/data/formats-data.ts")
@@ -29,14 +37,14 @@ def main() -> None:
     dest = RAW / "smogon_sets_gen9.json"
     if not dest.exists():
         print(f"[get ] {SETS_URL}")
-        urllib.request.urlretrieve(SETS_URL, dest)
+        dest.write_bytes(fetch(SETS_URL))
     else:
         print(f"[skip] {dest.name}")
 
     dest = RAW / "showdown_tiers.json"
     if not dest.exists():
         print(f"[get ] {TIERS_URL}")
-        ts = urllib.request.urlopen(TIERS_URL).read().decode()
+        ts = fetch(TIERS_URL).decode()
         tiers = {}
         # entries look like:  garchomp: {\n\t\ttier: "UUBL",\n\t\tdoublesTier: "DUU",
         for m in re.finditer(
