@@ -127,6 +127,13 @@ curl -X POST localhost:8000/api/ask -H 'Content-Type: application/json' \
   query.
 - Language boost: docs matching the query's script rank slightly higher
 
+**Cross-lingual query rewriting** — `pkmrag/query_rewrite.py`. English-only
+domains (competitive sets) are unreachable from CJK queries lexically. The
+rewriter swaps entities for English via the id-linked name tables (~6k
+aliases, no MT), maps ~30 battle-vocabulary terms (配招→moveset), and runs
+the result as a second retrieval channel fused by reciprocal rank. Fires
+only when a CJK query names a known entity; works with both retrievers.
+
 **Dense (BGE-M3)** — `pkmrag/retrieval_dense.py`. Multilingual embeddings
 give true cross-lingual semantic retrieval (a Chinese query matches English
 docs by meaning, and handles non-entity questions like "which Pokemon is the
@@ -150,10 +157,19 @@ by the cross-lingual criterion — often ranks first, which is desirable in
 actual use.) Run `python eval/eval_crosslingual.py --retriever dense` to get
 comparable numbers for the dense model, before and after fine-tuning.
 
+Fine-tuning is what makes dense retrieval work at all here — Pokemon names
+are rare entities generic embedders have never meaningfully seen
+(MiniLM-L12, same eval as above):
+
+| model | recall@5 | MRR |
+|-------|---------|-----|
+| base MiniLM | 0.039 | 0.014 |
+| fine-tuned (2 epochs, RTX 4060, ~12 min) | **0.980** | **0.882** |
+
 ## Phase 2: fine-tuning the embedder
 
 Contrastive fine-tuning on cross-lingual pairs mined from the linkage table
-(33,742 pairs: species name↔doc and doc↔doc bridges, templated queries, move/ability name bridges, and species-name→competitive-doc bridges), with
+(41,006 pairs: species name↔doc and doc↔doc bridges, templated dex and battle queries, move/ability name bridges, and species-name→competitive-doc bridges), with
 in-batch negatives (= other Pokemon):
 
 ```bash
