@@ -74,6 +74,24 @@ def main(eval_frac: float = 0.1) -> None:
                     tmpl = random.choice(QUERY_TEMPLATES[la])
                     emit(tmpl.format(n=nm[la]),
                          docs[(sid, random.choice(others))])
+
+        # cross-lingual name bridges for the non-species docs:
+        #   move/ability: name in language A -> doc in language B
+        #   competitive (EN-only): species name in any language -> the doc
+        for line in open(PROC / "corpus.jsonl", encoding="utf-8"):
+            d = json.loads(line)
+            kind = d.get("kind", "species")
+            if kind in ("move", "ability"):
+                own = d["name"].lower()
+                for alias in d.get("aliases", []):
+                    if alias != own:
+                        emit(alias, d["text"])
+            elif kind == "competitive":
+                sid = d["species_id"]
+                if sid in eval_sids:
+                    continue        # keep the held-out retrieval eval clean
+                for nm_ in names.get(sid, {}).values():
+                    emit(nm_, d["text"])
     print(f"{n} pairs -> {PROC / 'train_pairs.jsonl'}")
     print(f"{len(eval_sids)} held-out species -> "
           f"{PROC / 'eval_species.json'}")

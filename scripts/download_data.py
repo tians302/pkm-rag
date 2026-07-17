@@ -30,6 +30,9 @@ FILES = [
     "move_flavor_text.csv",            # localized move descriptions
     "move_damage_class_prose.csv",     # physical / special / status, localized
     "pokemon_moves.csv",               # learnsets (large: ~25 MB)
+    "ability_flavor_text.csv",         # localized ability descriptions
+    "pokemon_evolution.csv",           # evolution conditions
+    "item_names.csv",                  # localized item names (evo stones)
 ]
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "raw"

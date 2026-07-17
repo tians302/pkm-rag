@@ -27,8 +27,14 @@ All data comes from the [PokeAPI database](https://github.com/PokeAPI/pokeapi)
 - **~900 moves** with localized names, stats, and descriptions
   (`moves.csv`, `move_names.csv`, `move_flavor_text.csv`), plus level-up
   learnsets (`pokemon_moves.csv`)
+- **Abilities** with localized effect text (`ability_flavor_text.csv`),
+  **evolution conditions** (`pokemon_evolution.csv`), localized item names
+- **Competitive battling data** (English): Smogon/Showdown tier placements
+  and common sets via [pkmn/smogon](https://github.com/pkmn/smogon) and
+  [smogon/pokemon-showdown](https://github.com/smogon/pokemon-showdown)
+  (MIT) -- `scripts/download_competitive.py`
 
-The corpus builder emits **7,768 documents**:
+The corpus builder emits **9,516 documents**:
 
 - **4,100 species docs** (one per species × language): a localized fact card
   (names in all languages, genus, types, abilities, height/weight, base
@@ -36,7 +42,14 @@ The corpus builder emits **7,768 documents**:
   and the level-up learnset from that Pokemon's newest game version) plus
   deduplicated Pokedex entries.
 - **3,596 move docs** (one per move × language): type, damage class,
-  power/accuracy/PP, names in all languages, localized effect description.
+  power/accuracy/PP, priority notes, names in all languages, localized
+  effect description.
+- **1,246 ability docs** (one per ability × language): what the ability
+  actually does, names in all languages.
+- **502 competitive docs** (English-only, linked by species id): Showdown
+  tier placement plus up to two common Smogon sets (moves, item, ability,
+  nature, EVs, Tera types). Cross-lingual access relies on the species
+  alias boost (sparse) or the fine-tuned embedder (dense).
 - **72 type-chart docs** (18 types × 4 languages) phrased the way questions
   are asked ("the most effective attacks against Fire-type Pokemon are…") —
   small local LLMs answer reliably from that phrasing but flip the
@@ -140,7 +153,7 @@ comparable numbers for the dense model, before and after fine-tuning.
 ## Phase 2: fine-tuning the embedder
 
 Contrastive fine-tuning on cross-lingual pairs mined from the linkage table
-(18,460 pairs: name↔doc bridges, doc↔doc bridges, templated queries), with
+(33,742 pairs: species name↔doc and doc↔doc bridges, templated queries, move/ability name bridges, and species-name→competitive-doc bridges), with
 in-batch negatives (= other Pokemon):
 
 ```bash
