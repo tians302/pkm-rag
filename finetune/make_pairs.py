@@ -16,6 +16,14 @@ from pathlib import Path
 PROC = Path(__file__).resolve().parent.parent / "data" / "processed"
 random.seed(42)
 
+COMP_TEMPLATES = {
+    "en": ["What set does {n} run?", "{n} competitive moveset",
+           "best build for {n}", "{n} EVs and item"],
+    "ja": ["{n}の対戦での型は？", "{n}の育成論", "{n}の調整と持ち物"],
+    "zh-hans": ["{n}怎么配招？", "{n}的对战配置", "{n}的努力值和道具"],
+    "zh-hant": ["{n}怎麼配招？", "{n}的對戰配置", "{n}的努力值和道具"],
+}
+
 QUERY_TEMPLATES = {
     "en": ["Tell me about {n}", "What type is {n}?", "{n} Pokedex entry",
            "What are {n}'s abilities?"],
@@ -90,8 +98,13 @@ def main(eval_frac: float = 0.1) -> None:
                 sid = d["species_id"]
                 if sid in eval_sids:
                     continue        # keep the held-out retrieval eval clean
-                for nm_ in names.get(sid, {}).values():
+                for la, nm_ in names.get(sid, {}).items():
                     emit(nm_, d["text"])
+                    # battle-style questions, so competitive docs win over
+                    # species docs for "how do I build X" phrasings
+                    for tmpl in COMP_TEMPLATES.get(
+                            la if la != "ja-hrkt" else "ja", []):
+                        emit(tmpl.format(n=nm_), d["text"])
     print(f"{n} pairs -> {PROC / 'train_pairs.jsonl'}")
     print(f"{len(eval_sids)} held-out species -> "
           f"{PROC / 'eval_species.json'}")
