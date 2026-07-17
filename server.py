@@ -69,7 +69,8 @@ def _get_pipeline(backend: str | None = None) -> RAGPipeline:
     if backend not in pipes:
         pipes[backend] = RAGPipeline(
             _STATE["retriever"], backend=backend,
-            ollama_model=CONFIG["ollama_model"])
+            ollama_model=CONFIG["ollama_model"],
+            rewriter=_STATE.get("rewriter"))
     return pipes[backend]
 
 
@@ -85,6 +86,8 @@ async def lifespan(app: FastAPI):
             CORPUS, model_name=CONFIG["embedder"])
     else:
         _STATE["retriever"] = SparseRetriever(CORPUS)
+    from pkmrag.query_rewrite import QueryRewriter
+    _STATE["rewriter"] = QueryRewriter(CORPUS)
     _get_pipeline()  # warm the default pipeline
     yield
     _STATE["pipelines"].clear()

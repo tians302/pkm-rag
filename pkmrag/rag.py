@@ -90,15 +90,27 @@ def generate_extractive(question: str, docs: list[dict]) -> str:
 class RAGPipeline:
     def __init__(self, retriever, backend: str = "extractive",
                  ollama_model: str = "qwen2.5:7b",
-                 hf_model: str = "Qwen/Qwen2.5-1.5B-Instruct"):
+                 hf_model: str = "Qwen/Qwen2.5-1.5B-Instruct",
+                 rewriter=None):
         self.retriever = retriever
         self.backend = backend
         self.ollama_model = ollama_model
+        self.rewriter = rewriter    # optional cross-lingual query rewriter
         self._hf = TransformersGenerator(hf_model) \
             if backend == "transformers" else None
 
-    def answer(self, question: str, k: int = 4) -> dict:
+    def _retrieve(self, question: str, k: int) -> list[dict]:
         docs = self.retriever.search(question, k=k)
+        if self.rewriter is None:
+            return docs
+        rq = self.rewriter.rewrite(question)
+        if not rq:
+            return docs
+        from pkmrag.query_rewrite import fuse
+        return fuse(docs, self.retriever.search(rq, k=k), k)
+
+    def answer(self, question: str, k: int = 4) -> dict:
+        docs = self._retrieve(question, k)
         if not docs:
             return {"answer": "No relevant documents found.", "docs": []}
         prompt = PROMPT.format(context=_format_context(docs),

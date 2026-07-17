@@ -34,8 +34,10 @@ def build_pipeline(args) -> RAGPipeline:
         retriever = DenseRetriever(CORPUS, model_name=args.embedder)
     else:
         retriever = SparseRetriever(CORPUS)
+    from pkmrag.query_rewrite import QueryRewriter
     return RAGPipeline(retriever, backend=args.backend,
-                       ollama_model=args.ollama_model)
+                       ollama_model=args.ollama_model,
+                       rewriter=QueryRewriter(CORPUS))
 
 
 def main() -> None:
