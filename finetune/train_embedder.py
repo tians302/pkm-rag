@@ -35,7 +35,7 @@ def main() -> None:
 
     from sentence_transformers import (InputExample, SentenceTransformer,
                                        losses)
-    from torch.utils.data import DataLoader
+    from sentence_transformers.datasets import NoDuplicatesDataLoader
 
     examples = [InputExample(texts=[r["query"], r["positive"]])
                 for r in map(json.loads,
@@ -44,8 +44,10 @@ def main() -> None:
     print(f"{len(examples)} training pairs")
 
     model = SentenceTransformer(args.model)
-    loader = DataLoader(examples, shuffle=True, batch_size=args.batch_size,
-                        drop_last=True)
+    # many pairs share one positive doc (name/template bridges); plain
+    # shuffling puts duplicates in a batch, where in-batch negatives would
+    # mark the shared doc as both positive and negative at once
+    loader = NoDuplicatesDataLoader(examples, batch_size=args.batch_size)
     loss = losses.MultipleNegativesRankingLoss(model)
 
     steps = len(loader) * args.epochs
