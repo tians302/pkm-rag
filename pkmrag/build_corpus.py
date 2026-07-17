@@ -62,16 +62,20 @@ MATCHUP_DEF = {   # per-species defensive line, appended to the fact card
     "zh-hant": ("屬性相性（防禦）: {parts}。"),
 }
 DEF_BUCKETS = {   # multiplier -> localized phrase, {t} = type list
-    "en": {400: "takes 4x damage from {t}", 200: "weak to {t} (2x damage)",
+    "en": {400: "biggest weakness is {t} (double weakness, takes 4x damage)",
+           200: "weak to {t} (2x damage)",
            50: "resists {t} (0.5x damage)", 25: "strongly resists {t} (0.25x)",
            0: "immune to {t} (no damage)"},
-    "ja": {400: "{t}タイプの技は4倍のダメージ", 200: "弱点は{t}（こうかばつぐん、2倍）",
+    "ja": {400: "最大の弱点は{t}（4倍のダメージ）",
+           200: "弱点は{t}（こうかばつぐん、2倍）",
            50: "{t}はこうかいまひとつ（0.5倍）", 25: "{t}は0.25倍",
            0: "{t}はこうかなし（無効）"},
-    "zh-hans": {400: "受{t}属性4倍伤害", 200: "弱点是{t}（效果绝佳，2倍）",
+    "zh-hans": {400: "最大弱点是{t}（受到4倍伤害）",
+                200: "弱点是{t}（效果绝佳，2倍）",
                 50: "抵抗{t}（效果不好，0.5倍）", 25: "强抵抗{t}（0.25倍）",
                 0: "免疫{t}（无效）"},
-    "zh-hant": {400: "受{t}屬性4倍傷害", 200: "弱點是{t}（效果絕佳，2倍）",
+    "zh-hant": {400: "最大弱點是{t}（受到4倍傷害）",
+                200: "弱點是{t}（效果絕佳，2倍）",
                 50: "抵抗{t}（效果不好，0.5倍）", 25: "強抵抗{t}（0.25倍）",
                 0: "免疫{t}（無效）"},
 }
@@ -112,6 +116,30 @@ TYPE_DOC_IMM_O = {"en": ", and have no effect on {t} Pokemon",
                   "ja": "。{t}タイプにはこうかなし",
                   "zh-hans": "，对{t}属性没有效果",
                   "zh-hant": "，對{t}屬性沒有效果"}
+
+MOVE_DOC = {      # one document per (move, language)
+    "en": ("{name} is a{n} {type}-type {cls} move (power {power}, "
+           "accuracy {acc}, PP {pp}). Names: English {en}, Japanese {ja}, "
+           "Simplified Chinese {zhs}, Traditional Chinese {zht}. "
+           "Effect: {desc}"),
+    "ja": ("{name}は{type}タイプの{cls}わざ（威力 {power}、命中 {acc}、"
+           "PP {pp}）。名前: 英語 {en}、日本語 {ja}、簡体字中国語 {zhs}、"
+           "繁体字中国語 {zht}。効果: {desc}"),
+    "zh-hans": ("{name}是{type}属性的{cls}招式（威力 {power}，命中 {acc}，"
+                "PP {pp}）。名字: 英语 {en}，日语 {ja}，简体中文 {zhs}，"
+                "繁体中文 {zht}。效果: {desc}"),
+    "zh-hant": ("{name}是{type}屬性的{cls}招式（威力 {power}，命中 {acc}，"
+                "PP {pp}）。名字: 英語 {en}，日語 {ja}，簡體中文 {zhs}，"
+                "繁體中文 {zht}。效果: {desc}"),
+}
+LEARNSET = {      # appended to the species fact card
+    "en": " Moves learned by leveling up: {mv}.",
+    "ja": "レベルアップで覚えるわざ: {mv}。",
+    "zh-hans": "升级学会的招式: {mv}。",
+    "zh-hant": "升級學會的招式: {mv}。",
+}
+MOVE_ENTRY = {"en": "{n} (Lv. {lv})", "ja": "{n}（Lv.{lv}）",
+              "zh-hans": "{n}（Lv.{lv}）", "zh-hant": "{n}（Lv.{lv}）"}
 
 
 def read_csv(name: str):
@@ -182,6 +210,64 @@ def build() -> None:
                  for m in (400, 200, 50, 25, 0) if m in buckets]
         joiner = "; " if lang == "en" else "；"
         return MATCHUP_DEF[lang].format(parts=joiner.join(parts))
+
+    # --- moves: stats, localized names/descriptions, learnsets -------------
+    move_info = {}              # move_id -> (type_id, damage_class_id, p, a, pp)
+    for row in read_csv("moves.csv"):
+        mid = int(row["id"])
+        if mid >= 10000 or int(row["type_id"]) > 18:
+            continue            # shadow / special internal moves
+        move_info[mid] = (int(row["type_id"]), int(row["damage_class_id"]),
+                          row["power"] or "—", row["accuracy"] or "—",
+                          row["pp"] or "—")
+
+    move_names = defaultdict(dict)
+    for row in read_csv("move_names.csv"):
+        lang = LANGS.get(int(row["local_language_id"]))
+        if lang and int(row["move_id"]) in move_info:
+            move_names[int(row["move_id"])][lang] = row["name"]
+
+    class_names = defaultdict(dict)   # 1 status / 2 physical / 3 special
+    for row in read_csv("move_damage_class_prose.csv"):
+        lang = LANGS.get(int(row["local_language_id"]))
+        if lang:
+            class_names[int(row["move_damage_class_id"])][lang] = row["name"]
+
+    # newest description per (move, lang)
+    move_desc = defaultdict(dict)     # move_id -> lang -> (vg, text)
+    for row in read_csv("move_flavor_text.csv"):
+        lang = LANGS.get(int(row["language_id"]))
+        mid = int(row["move_id"])
+        if lang not in DOC_LANGS or mid not in move_info:
+            continue
+        vg = int(row["version_group_id"])
+        if vg >= move_desc[mid].get(lang, (0, ""))[0]:
+            move_desc[mid][lang] = (vg, clean(row["flavor_text"]))
+
+    # level-up learnset from each pokemon's newest version group
+    lv_moves = defaultdict(lambda: defaultdict(list))  # pkid -> vg -> entries
+    for row in read_csv("pokemon_moves.csv"):
+        if row["pokemon_move_method_id"] != "1":
+            continue                                   # level-up only
+        lvl = int(row["level"])
+        mid = int(row["move_id"])
+        if lvl >= 1 and mid in move_info:
+            lv_moves[int(row["pokemon_id"])][int(
+                row["version_group_id"])].append((lvl, mid))
+
+    def learnset_line(pkid: int, lang: str) -> str:
+        if not lv_moves.get(pkid):
+            return ""
+        vg = max(lv_moves[pkid])
+        seen, entries = set(), []
+        for lvl, mid in sorted(lv_moves[pkid][vg]):
+            nm = move_names[mid].get(lang, move_names[mid].get("en"))
+            if nm and mid not in seen:
+                seen.add(mid)
+                entries.append(MOVE_ENTRY[lang].format(n=nm, lv=lvl))
+        if not entries:
+            return ""
+        return LEARNSET[lang].format(mv=SEP[lang].join(entries))
 
     # --- default pokemon per species: physical + battle data ---------------
     default_pk = {}             # species_id -> pokemon_id (is_default)
@@ -254,7 +340,7 @@ def build() -> None:
                     "kind": "species",
                     "lang": lang,
                     "name": nm[lang],
-                    "text": card + matchup
+                    "text": card + matchup + learnset_line(pkid, lang)
                             + (" Pokedex: " + dex if dex else ""),
                 }
                 out.write(json.dumps(doc, ensure_ascii=False) + "\n")
@@ -289,6 +375,34 @@ def build() -> None:
                     "aliases": sorted({type_names[tid][l].lower()
                                        for l in DOC_LANGS
                                        if l in type_names[tid]}),
+                    "text": text,
+                }
+                out.write(json.dumps(doc, ensure_ascii=False) + "\n")
+                n_docs += 1
+
+        # --- one document per (move, language) ------------------------------
+        for mid in sorted(move_info):
+            tid, cls, power, acc, pp = move_info[mid]
+            mnm = move_names[mid]
+            for lang in DOC_LANGS:
+                if lang not in mnm:
+                    continue
+                tn = tname(tid, lang)
+                text = MOVE_DOC[lang].format(
+                    name=mnm[lang], type=tn,
+                    n="n" if lang == "en" and tn[:1] in "AEIOU" else "",
+                    cls=class_names[cls].get(lang, class_names[cls]["en"]),
+                    power=power, acc=acc, pp=pp,
+                    en=mnm.get("en", "?"), ja=mnm.get("ja", "?"),
+                    zhs=mnm.get("zh-hans", "?"), zht=mnm.get("zh-hant", "?"),
+                    desc=move_desc[mid].get(lang, (0, ""))[1])
+                doc = {
+                    "id": f"move-{mid}-{lang}",
+                    "species_id": 0,
+                    "kind": "move",
+                    "lang": lang,
+                    "name": mnm[lang],
+                    "aliases": sorted({n.lower() for n in mnm.values()}),
                     "text": text,
                 }
                 out.write(json.dumps(doc, ensure_ascii=False) + "\n")

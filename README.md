@@ -24,13 +24,19 @@ All data comes from the [PokeAPI database](https://github.com/PokeAPI/pokeapi)
   entries (official Chinese text exists from Gen 7 onward)
 - Localized **type and ability** names
 - The **type-effectiveness matrix** (`type_efficacy.csv`)
+- **~900 moves** with localized names, stats, and descriptions
+  (`moves.csv`, `move_names.csv`, `move_flavor_text.csv`), plus level-up
+  learnsets (`pokemon_moves.csv`)
 
-The corpus builder emits **4,172 documents**:
+The corpus builder emits **7,768 documents**:
 
 - **4,100 species docs** (one per species × language): a localized fact card
   (names in all languages, genus, types, abilities, height/weight, base
-  stats, and a computed weakness/resistance line that accounts for dual
-  typing) plus deduplicated Pokedex entries.
+  stats, a computed weakness/resistance line that accounts for dual typing,
+  and the level-up learnset from that Pokemon's newest game version) plus
+  deduplicated Pokedex entries.
+- **3,596 move docs** (one per move × language): type, damage class,
+  power/accuracy/PP, names in all languages, localized effect description.
 - **72 type-chart docs** (18 types × 4 languages) phrased the way questions
   are asked ("the most effective attacks against Fire-type Pokemon are…") —
   small local LLMs answer reliably from that phrasing but flip the
@@ -171,8 +177,9 @@ pkm-rag/
   retriever for those.
 - Chinese Pokedex flavor text only covers Gen 7+ games; fact cards cover all
   1,025 species in all languages regardless.
-- Moves are not yet in the corpus (`move_names.csv` is multilingual too —
-  natural extension).
+- Learnsets cover level-up moves from each Pokemon's newest version group
+  only — no TM/HM, egg, or tutor moves yet (`pokemon_moves.csv` has them
+  all if needed).
 
 ## License
 
